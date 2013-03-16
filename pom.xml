@@ -1,0 +1,275 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.liblouis</groupId>
+	<artifactId>louisxml</artifactId>
+	<version>2.4.0-odt2braille-0.1.1-SNAPSHOT</version>
+	<packaging>nar</packaging>
+	<name>liblouisxml-nar</name>
+	<description>liblouisxml packaged in a NAR (Native ARchive).</description>
+	<url>https://github.com/bertfrees/liblouisxml-nar</url>
+	<scm>
+		<connection>scm:git:git@github.com:bertfrees/liblouisxml-nar.git</connection>
+		<developerConnection>scm:git:git@github.com:bertfrees/liblouisxml-nar.git</developerConnection>
+		<url>git@github.com:bertfrees/liblouisxml-nar.git</url>
+	</scm>
+	<licenses>
+		<license>
+			<name>GNU Lesser General Public License 3</name>
+			<url>http://www.gnu.org/licenses/lgpl.html</url>
+		</license>
+	</licenses>
+	<developers>
+		<developer>
+			<name>Bert Frees</name>
+			<email>bertfrees@gmail.com</email>
+			<url>http://github.com/bertfrees</url>
+		</developer>
+	</developers>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<liblouis.version>2.3.0-odt2braille-0.1.1-SNAPSHOT</liblouis.version>
+		<nar.arch.option/>
+		<nar.install_name.option/>
+		<nar.rpath.option/>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.liblouis</groupId>
+			<artifactId>louis</artifactId>
+			<version>${liblouis.version}</version>
+			<type>nar</type>
+		</dependency>
+	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-scm-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>checkout-sources</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>checkout</goal>
+						</goals>
+						<configuration>
+							<connectionUrl>scm:git:git://github.com/bertfrees/liblouisxml.git</connectionUrl>
+							<scmVersion>odt2braille-0.1.1</scmVersion>
+							<scmVersionType>tag</scmVersionType>
+							<skipCheckoutIfExists>true</skipCheckoutIfExists>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-nar-plugin</artifactId>
+				<version>2.1-SNAPSHOT</version>
+				<extensions>true</extensions>
+				<configuration>
+					<skipUnpackProcessing>true</skipUnpackProcessing>
+					<libraries>
+						<library>
+							<type>shared</type>
+						</library>
+					</libraries>
+				</configuration>
+				<executions>
+					<execution>
+						<id>default-nar-gnu-resources</id>
+						<phase>none</phase>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-sources</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>src/gnu</outputDirectory>
+							<overwrite>true</overwrite>
+							<resources>
+								<resource>
+									<directory>target/checkout</directory>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+					<execution>
+						<id>copy-results</id>
+						<phase>process-classes</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>target/nar/louisxml-${project.version}-${nar.aol}-shared/lib/${nar.aol}/shared</outputDirectory>
+							<resources>
+								<resource>
+									<directory>target/nar/gnu/${nar.aol}/target/lib</directory>
+									<includes>
+										<include>pkgconfig/*</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>shell-maven-plugin</artifactId>
+				<configuration>
+					<chmod>true</chmod>
+				</configuration>
+				<executions>
+					<execution>
+						<id>process-sources</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>shell</goal>
+						</goals>
+						<configuration>
+							<workDir>src/gnu</workDir>
+							<script>
+								#!/bin/sh
+								sed \
+								-e 's|^\(liblouisxml_la_LDFLAGS =\)\(.*\)$|\1 ${nar.install_name.option} ${nar.rpath.option} -avoid-version \2|' \
+								../../target/checkout/liblouisxml/Makefile.am > liblouisxml/Makefile.am
+								sed \
+								-e 's|^\(AC_INIT(liblouisxml,\).*\(,.*\)$|\1 ${project.version}\2|' \
+								-e '/^AC_INIT.*$/a\
+								CFLAGS="$CFLAGS ${nar.arch.option}"\
+								export PKG_CONFIG_PATH="${project.build.directory}/nar/pkgconfig"\
+								' \
+								../../target/checkout/configure.ac > configure.ac
+								sed \
+								-e '/^prefix=/d' \
+								-e '/^exec_prefix=/d' \
+								-e 's|@libdir@|${prefix}/louisxml-${project.version}-${nar.aol}-shared/lib/${nar.aol}/shared|' \
+								-e 's|@includedir@|${prefix}/louisxml-${project.version}-noarch/include|' \
+								-e 's|@VERSION@|${project.version}|' \
+								../../target/checkout/liblouisxml.pc.in > liblouisxml.pc.in
+							</script>
+						</configuration>
+					</execution>
+					<execution>
+						<id>process-pkgconfig</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>shell</goal>
+						</goals>
+						<configuration>
+							<workDir>target/nar</workDir>
+							<script>
+								#!/bin/sh
+								mkdir pkgconfig
+								sed \
+								-e 's|\${prefix}|${project.build.directory}/nar|' \
+								louis-${liblouis.version}-${nar.aol}-shared/lib/${nar.aol}/shared/pkgconfig/liblouis.pc > pkgconfig/liblouis.pc
+							</script>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<copy todir="target/test-classes" flatten="true">
+									<fileset dir="target/nar">
+										<include name="**/lib/*.so"/>
+										<include name="**/lib/*.dylib"/>
+										<include name="**/bin/xml2brl"/>
+									</fileset>
+								</copy>
+								<chmod file="target/test-classes/test" perm="+x"/>
+								<exec executable="target/test-classes/test"/>
+							</tasks>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-clean-plugin</artifactId>
+				<configuration>
+					<filesets>
+						<fileset>
+							<directory>src/gnu</directory>
+						</fileset>
+					</filesets>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<profiles>
+		<profile>
+			<id>i386</id>
+			<activation>
+				<property>
+					<name>os.arch</name>
+					<value>i386</value>
+				</property>
+			</activation>
+			<properties>
+				<nar.arch.option>-m32</nar.arch.option>
+			</properties>
+		</profile>
+		<profile>
+			<id>linux</id>
+			<activation>
+				<property>
+					<name>os.name</name>
+					<value>Linux</value>
+				</property>
+			</activation>
+			<properties>
+				<nar.rpath.option>-Wl,-rpath,".:\\\$\$ORIGIN",--enable-new-dtags</nar.rpath.option>
+			</properties>
+		</profile>
+		<profile>
+			<id>mac</id>
+			<activation>
+				<property>
+					<name>os.name</name>
+					<value>Mac OS X</value>
+				</property>
+			</activation>
+			<properties>
+				<nar.install_name.option>-Wl,-install_name,@loader_path/liblouisxml.dylib</nar.install_name.option>
+			</properties>
+		</profile>
+	</profiles>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>bertfrees-github-snapshots</id>
+			<url>http://bertfrees.github.com/snapshots</url>
+		</pluginRepository>
+		<pluginRepository>
+			<id>duns-maven-snapshots</id>
+			<url>http://duns.github.com/maven-snapshots</url>
+		</pluginRepository>
+	</pluginRepositories>
+	<distributionManagement>
+		<repository>
+			<id>sonatype-nexus-staging</id>
+			<name>oss.sonatype.org Staging Repository</name>
+			<url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+		</repository>
+		<snapshotRepository>
+			<id>sonatype-nexus-snapshots</id>
+			<name>oss.sonatype.org github Release Repository Snapshot Repository</name>
+			<url>http://oss.sonatype.org/content/repositories/snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
+</project>
