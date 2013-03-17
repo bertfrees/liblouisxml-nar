@@ -387,6 +387,51 @@
 				</plugins>
 			</build>
 		</profile>
+		<profile>
+			<id>libxml2</id>
+			<activation>
+				<property>
+					<name>include_libxml2</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-dependency-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>unpack-libxml2</id>
+								<phase>generate-sources</phase>
+								<goals>
+									<goal>unpack</goal>
+								</goals>
+								<configuration>
+									<artifactItems>
+										<artifactItem>
+											<groupId>org.xmlsoft</groupId>
+											<artifactId>xml2</artifactId>
+											<version>${libxml2.version}</version>
+											<classifier>noarch</classifier>
+											<type>nar</type>
+											<outputDirectory>target/nar</outputDirectory>
+										</artifactItem>
+										<artifactItem>
+											<groupId>org.xmlsoft</groupId>
+											<artifactId>xml2</artifactId>
+											<version>${libxml2.version}</version>
+											<classifier>${nar.aol}-shared</classifier>
+											<type>nar</type>
+											<outputDirectory>target/nar</outputDirectory>
+										</artifactItem>
+									</artifactItems>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 	</profiles>
 	<pluginRepositories>
 		<pluginRepository>
