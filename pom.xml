@@ -190,6 +190,9 @@
 								-e 's|^\(liblouisxml_la_LDFLAGS =\)\(.*\)$|\1 ${nar.install_name.option} ${nar.rpath.option} -avoid-version \2|' \
 								../../target/checkout/liblouisxml/Makefile.am > liblouisxml/Makefile.am
 								sed \
+								-e 's|\(^AM_LDFLAGS =\)\(.*\)$|\1 ${nar.rpath.option} \2|' \
+								../../target/checkout/tools/Makefile.am > tools/Makefile.am
+								sed \
 								-e 's|^\(AC_INIT(liblouisxml,\).*\(,.*\)$|\1 ${project.version}\2|' \
 								-e '/^AC_INIT.*$/a\
 								CFLAGS="$CFLAGS ${nar.arch.option}"\
