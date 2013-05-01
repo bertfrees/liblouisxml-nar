@@ -57,8 +57,8 @@
 						</goals>
 						<configuration>
 							<connectionUrl>scm:git:git://github.com/bertfrees/liblouisxml.git</connectionUrl>
-							<scmVersion>odt2braille</scmVersion>
-							<scmVersionType>branch</scmVersionType>
+							<scmVersion>odt2braille-0.1.1</scmVersion>
+							<scmVersionType>tag</scmVersionType>
 							<skipCheckoutIfExists>true</skipCheckoutIfExists>
 						</configuration>
 					</execution>
